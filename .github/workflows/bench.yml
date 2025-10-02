@@ -1,0 +1,46 @@
+name: UI Bench
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    env:
+      NODE_VERSION: ${{ vars.NODE_VERSION || '20' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install deps
+        run: npm i && npx playwright install --with-deps
+
+      - name: Clone & start targets
+        env:
+          REPO_CUSTOM: ${{ secrets.REPO_CUSTOM }}
+          REPO_COPILOT: ${{ secrets.REPO_COPILOT }}
+          REPO_AGENT: ${{ secrets.REPO_AGENT }}
+        run: node scripts/start-all.ts &
+
+      - name: Wait for targets
+        run: npx wait-on http://localhost:3000 http://localhost:3001 http://localhost:3002
+
+      - name: Configure targets.json
+        run: cp bench/targets.example.json bench/targets.json
+
+      - name: Run bench
+        run: npm run bench:ci
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-latency-results
+          path: artifacts/
+
+      - name: Job Summary
+        run: cat artifacts/results.md >> $GITHUB_STEP_SUMMARY
