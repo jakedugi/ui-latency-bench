@@ -28,7 +28,7 @@ jobs:
         run: node scripts/start-all.ts &
 
       - name: Wait for targets
-        run: npx wait-on http://localhost:3000 http://localhost:3001 http://localhost:3002
+        run: npx wait-on http://localhost:3000 http://localhost:3001 http://localhost:3002 http://localhost:8000
 
       - name: Configure targets.json
         run: cp bench/targets.example.json bench/targets.json

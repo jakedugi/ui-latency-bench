@@ -1,0 +1,32 @@
+[
+  {
+    "name": "custom-next-langchain",
+    "baseUrl": "http://localhost:3000",
+    "fetchRegex": "/\\/api\\/(chat|nlq)/",
+    "selectors": {
+      "input": "[data-testid='chat-input']",
+      "send": "[data-testid='send-button']",
+      "assistant": "[data-testid='assistant-msg']"
+    }
+  },
+  {
+    "name": "copilotkit-ui",
+    "baseUrl": "http://localhost:3003",
+    "fetchRegex": "/\\/api\\/(chat|nlq)/",
+    "selectors": {
+      "input": "[data-testid='chat-input']",
+      "send": "[data-testid='send-button']",
+      "assistant": "[data-testid='assistant-msg']"
+    }
+  },
+  {
+    "name": "agent-chat-ui-langgraph",
+    "baseUrl": "http://localhost:3001",
+    "fetchRegex": "/\\/api\\/(threads|runs|chat)/",
+    "selectors": {
+      "input": "[data-testid='chat-input']",
+      "send": "[data-testid='send-button']",
+      "assistant": "[data-testid='assistant-msg']"
+    }
+  }
+]
