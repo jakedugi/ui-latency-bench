@@ -17,11 +17,16 @@
 
   async function fetchWithPerf(input, init, label) {
     try {
+      const url = typeof input === "string" ? input : input?.url ?? "";
+      console.log(`[PERF] Intercepted fetch to: ${url}`);
+      
       mark(`${label}:submit`);
       const t0 = performance.now();
       const res = await window.__origFetch(input, init);
       mark(`${label}:first-byte`);
-      event(`${label}:ttfb_ms`, performance.now() - t0);
+      const ttfb = performance.now() - t0;
+      event(`${label}:ttfb_ms`, ttfb);
+      console.log(`[PERF] TTFB for ${url}: ${ttfb}ms`);
 
       if (!res.body || typeof res.body.getReader !== "function") {
         // Non-streaming
