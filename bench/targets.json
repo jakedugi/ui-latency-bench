@@ -4,9 +4,9 @@
     "baseUrl": "http://localhost:3000",
     "fetchRegex": "/\\/api\\/(chat|nlq)/",
     "selectors": {
-      "input": "[data-testid='chat-input']",
-      "send": "[data-testid='send-button']",
-      "assistant": "[data-testid='assistant-msg']"
+      "input": "input[type='text']",
+      "send": "button[type='submit']",
+      "assistant": "div[style*='overflow-y'] > div > div"
     }
   },
   {
@@ -14,9 +14,9 @@
     "baseUrl": "http://localhost:3003",
     "fetchRegex": "/\\/api\\/(chat|nlq)/",
     "selectors": {
-      "input": "[data-testid='chat-input']",
-      "send": "[data-testid='send-button']",
-      "assistant": "[data-testid='assistant-msg']"
+      "input": "textarea[placeholder*='Type a message']",
+      "send": "button[data-test-id='copilot-chat-ready']",
+      "assistant": "[role='status']"
     }
   },
   {
@@ -24,9 +24,9 @@
     "baseUrl": "http://localhost:3001",
     "fetchRegex": "/\\/api\\/(threads|runs|chat)/",
     "selectors": {
-      "input": "[data-testid='chat-input']",
-      "send": "[data-testid='send-button']",
-      "assistant": "[data-testid='assistant-msg']"
+      "input": "textarea[placeholder*='Type your message']",
+      "send": "button[type='submit']",
+      "assistant": "[data-role='assistant']"
     }
   }
 ]

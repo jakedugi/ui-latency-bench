@@ -57,7 +57,7 @@ function summarize(samples: any[], label = "chat") {
 
 for (const target of targets) {
   test.describe(`UI Latency Standard v1: ${target.name}`, () => {
-    test(`P1: OK only (first token latency)`, async ({ page, context }) => {
+    test(`P1: Simple query (first token latency)`, async ({ page, context }) => {
       const perfInit = fs.readFileSync(path.join(__dirname, "perf-init.js"), "utf8");
       await page.addInitScript(perfInit);
       await page.addInitScript(({ fetchRegex }) => {
@@ -67,7 +67,7 @@ for (const target of targets) {
       await page.goto(target.baseUrl, { waitUntil: "domcontentloaded" });
       await set4G(context, page);
 
-      const samples = await runPrompt(page, target.selectors, `Reply with "OK" only.`);
+      const samples = await runPrompt(page, target.selectors, `Show me Mohamed Salah`);
       const m = summarize(samples);
 
       expect(m.ttfb_ms).toBeLessThan(1500);
@@ -78,7 +78,7 @@ for (const target of targets) {
       fs.writeFileSync(path.join(OUTPUT_DIR, `${target.name}-P1.json`), JSON.stringify(m, null, 2));
     });
 
-    test(`P2: 512 chars streaming (throughput-ish)`, async ({ page, context }) => {
+    test(`P2: Complex query (streaming throughput)`, async ({ page, context }) => {
       const perfInit = fs.readFileSync(path.join(__dirname, "perf-init.js"), "utf8");
       await page.addInitScript(perfInit);
       await page.addInitScript(({ fetchRegex }) => {
@@ -91,7 +91,7 @@ for (const target of targets) {
       const samples = await runPrompt(
         page,
         target.selectors,
-        `Repeat the character "A" exactly 512 times with no spaces and nothing else.`
+        `Show me Mohamed Salah's goals and assists in 2025`
       );
       const m = summarize(samples);
 
