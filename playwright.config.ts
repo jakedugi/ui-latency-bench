@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   timeout: 60_000,
@@ -7,7 +7,7 @@ export default defineConfig({
     headless: true,
     viewport: { width: 1280, height: 800 },
     ignoreHTTPSErrors: true,
-    trace: 'off'
+    trace: "off",
   },
-  reporter: [['list']]
+  reporter: [["list"]],
 });

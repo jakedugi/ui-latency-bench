@@ -4,17 +4,19 @@ import path from "path";
 import url from "url";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const TARGETS_PATH = process.env.TARGETS_PATH ?? path.join(__dirname, "targets.json");
-const OUTPUT_DIR = process.env.OUTPUT_DIR ?? path.join(process.cwd(), "artifacts");
+const TARGETS_PATH =
+  process.env.TARGETS_PATH ?? path.join(__dirname, "targets.json");
+const OUTPUT_DIR =
+  process.env.OUTPUT_DIR ?? path.join(process.cwd(), "artifacts");
 
 type Target = {
   name: string;
   baseUrl: string;
-  fetchRegex: string;         // e.g. "/api/(chat|nlq|threads|runs)"
+  fetchRegex: string; // e.g. "/api/(chat|nlq|threads|runs)"
   selectors: {
-    input: string;            // e.g. [data-testid="chat-input"]
-    send: string;             // e.g. [data-testid="send-button"]
-    assistant: string;        // e.g. [data-testid="assistant-msg"]
+    input: string; // e.g. [data-testid="chat-input"]
+    send: string; // e.g. [data-testid="send-button"]
+    assistant: string; // e.g. [data-testid="assistant-msg"]
   };
 };
 
@@ -36,7 +38,7 @@ async function ensureNLQMode(page: any, targetName: string) {
   // For custom-next-langchain, ensure we're in NLQ mode
   if (targetName === "custom-next-langchain") {
     const nlqButton = page.locator('button:has-text("NL-GraphQL")');
-    if (await nlqButton.count() > 0) {
+    if ((await nlqButton.count()) > 0) {
       await nlqButton.click();
       await page.waitForTimeout(500);
     }
@@ -56,7 +58,7 @@ async function runPromptWithNetworkTracking(
   page: any,
   sel: Target["selectors"],
   text: string,
-  fetchRegex: string
+  fetchRegex: string,
 ): Promise<NetworkMetrics> {
   const regex = new RegExp(fetchRegex);
   let ttfb_ms = -1;
@@ -77,33 +79,39 @@ async function runPromptWithNetworkTracking(
     responseHandler = async (response: any) => {
       const url = response.url();
       if (!regex.test(url)) return;
-      
+
       // Skip if we've already captured a response (avoid /api/info, etc.)
       if (requestCaptured && matchedUrl && matchedUrl !== url) return;
-      
+
       const method = response.request().method();
-      const contentType = response.headers()['content-type'] || '';
+      const contentType = response.headers()["content-type"] || "";
       console.log(`[NET] Response ${method} ${url} (${contentType})`);
-      
+
       // Track mutations (POST/PUT/PATCH) OR streaming GET requests
       // Skip only info/health/search checks
-      const isInfoRequest = url.includes('/info') || url.includes('/health') || url.includes('/search') || url.includes('/history') || url.endsWith('/api/');
-      
+      const isInfoRequest =
+        url.includes("/info") ||
+        url.includes("/health") ||
+        url.includes("/search") ||
+        url.includes("/history") ||
+        url.endsWith("/api/");
+
       if (isInfoRequest) {
         console.log(`[NET] Skipping info/health/search check request`);
         return;
       }
-      
+
       // Must be a mutation or contain 'stream' or 'run' in the URL
-      const isRelevantRequest = method !== 'GET' || url.includes('/stream') || url.includes('/runs');
+      const isRelevantRequest =
+        method !== "GET" || url.includes("/stream") || url.includes("/runs");
       if (!isRelevantRequest) {
         console.log(`[NET] Skipping non-relevant GET request`);
         return;
       }
-      
+
       matchedUrl = url;
       requestCaptured = true;
-      
+
       try {
         // Measure TTFB (time to first byte - when headers arrive)
         const now = Date.now();
@@ -119,11 +127,13 @@ async function runPromptWithNetworkTracking(
           bytes_total = body.length;
           responseEndTime = Date.now();
           ttl_ms = responseEndTime - requestStartTime;
-          console.log(`[NET] Response complete. Bytes: ${bytes_total}, TTL: ${ttl_ms}ms`);
-          
+          console.log(
+            `[NET] Response complete. Bytes: ${bytes_total}, TTL: ${ttl_ms}ms`,
+          );
+
           // Clean up handlers
-          page.off('response', responseHandler);
-          page.off('request', requestHandler);
+          page.off("response", responseHandler);
+          page.off("request", requestHandler);
           resolve();
         } catch (e) {
           // Streaming response - body not available, wait a bit more
@@ -132,16 +142,16 @@ async function runPromptWithNetworkTracking(
           responseEndTime = Date.now();
           ttl_ms = responseEndTime - requestStartTime;
           console.log(`[NET] Streaming complete (estimated). TTL: ${ttl_ms}ms`);
-          
+
           // Clean up handlers
-          page.off('response', responseHandler);
-          page.off('request', requestHandler);
+          page.off("response", responseHandler);
+          page.off("request", requestHandler);
           resolve();
         }
       } catch (err) {
         console.error(`[NET] Error processing response:`, err);
-        page.off('response', responseHandler);
-        page.off('request', requestHandler);
+        page.off("response", responseHandler);
+        page.off("request", requestHandler);
         resolve();
       }
     };
@@ -149,24 +159,31 @@ async function runPromptWithNetworkTracking(
     requestHandler = (request: any) => {
       const url = request.url();
       const method = request.method();
-      
+
       // Debug: log ALL requests to see what's happening
-      if (url.includes('/api/')) {
+      if (url.includes("/api/")) {
         console.log(`[DEBUG] All API requests: ${method} ${url}`);
       }
-      
+
       // Track any meaningful API request (skip only info/health/search/history checks)
-      const isInfoRequest = url.includes('/info') || url.includes('/health') || url.includes('/search') || url.includes('/history') || url.endsWith('/api/');
-      const isRelevantRequest = !isInfoRequest && (method !== 'GET' || url.includes('/stream') || url.includes('/runs'));
-      
+      const isInfoRequest =
+        url.includes("/info") ||
+        url.includes("/health") ||
+        url.includes("/search") ||
+        url.includes("/history") ||
+        url.endsWith("/api/");
+      const isRelevantRequest =
+        !isInfoRequest &&
+        (method !== "GET" || url.includes("/stream") || url.includes("/runs"));
+
       if (regex.test(url) && isRelevantRequest && requestStartTime === 0) {
         requestStartTime = Date.now();
         console.log(`[NET] Request started: ${method} ${url}`);
       }
     };
 
-    page.on('response', responseHandler);
-    page.on('request', requestHandler);
+    page.on("response", responseHandler);
+    page.on("request", requestHandler);
   });
 
   // Mark render start
@@ -174,23 +191,25 @@ async function runPromptWithNetworkTracking(
 
   // Fill input and click send button
   await page.locator(sel.input).fill(text);
-  await page.locator(sel.send).waitFor({ state: 'attached', timeout: 5000 });
+  await page.locator(sel.send).waitFor({ state: "attached", timeout: 5000 });
   await page.waitForTimeout(100); // Allow React state to update
-  
+
   // Click and start tracking
   await page.locator(sel.send).click({ force: true });
 
   // Wait for response to complete (longer for streaming)
   await Promise.race([
     responsePromise,
-    page.waitForTimeout(45000) // 45s timeout for slow streaming responses
+    page.waitForTimeout(45000), // 45s timeout for slow streaming responses
   ]);
 
   // Wait for visual rendering
   await page.waitForTimeout(3000); // Give time for DOM updates and streaming to complete
   const render_ms = Date.now() - (responseEndTime || renderStartMark);
 
-  console.log(`[NET] Final metrics - TTFB: ${ttfb_ms}ms, TTFT: ${ttft_ms}ms, TTL: ${ttl_ms}ms, Bytes: ${bytes_total}`);
+  console.log(
+    `[NET] Final metrics - TTFB: ${ttfb_ms}ms, TTFT: ${ttft_ms}ms, TTL: ${ttl_ms}ms, Bytes: ${bytes_total}`,
+  );
 
   return {
     ttfb_ms: ttfb_ms > 0 ? Math.round(ttfb_ms) : -1,
@@ -198,31 +217,34 @@ async function runPromptWithNetworkTracking(
     ttl_ms: ttl_ms > 0 ? Math.round(ttl_ms) : ttfb_ms,
     render_ms: Math.round(render_ms),
     bytes_total,
-    url: matchedUrl
+    url: matchedUrl,
   };
 }
 
 function calculateStats(runs: NetworkMetrics[]) {
-  const metrics = ['ttfb_ms', 'ttft_ms', 'ttl_ms', 'render_ms', 'bytes_total'];
+  const metrics = ["ttfb_ms", "ttft_ms", "ttl_ms", "render_ms", "bytes_total"];
   const result: any = {};
-  
+
   for (const metric of metrics) {
-    const values = runs.map(r => r[metric]).filter(v => v > 0);
+    const values = runs.map((r) => r[metric]).filter((v) => v > 0);
     if (values.length === 0) {
       result[metric] = -1;
       result[`${metric}_median`] = -1;
     } else {
       // Calculate mean
-      result[metric] = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+      result[metric] = Math.round(
+        values.reduce((a, b) => a + b, 0) / values.length,
+      );
       // Calculate median
       const sorted = [...values].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
-      result[`${metric}_median`] = sorted.length % 2 === 0
-        ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
-        : sorted[mid];
+      result[`${metric}_median`] =
+        sorted.length % 2 === 0
+          ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+          : sorted[mid];
     }
   }
-  
+
   return result;
 }
 
@@ -230,7 +252,10 @@ const NUM_RUNS = 3; // Number of runs for statistical significance (plus 1 warmu
 
 for (const target of targets) {
   test.describe(`UI Latency Standard v1: ${target.name}`, () => {
-    test(`P1: Simple query (first token latency)`, async ({ page, context }) => {
+    test(`P1: Simple query (first token latency)`, async ({
+      page,
+      context,
+    }) => {
       await page.goto(target.baseUrl, { waitUntil: "networkidle" });
       await page.waitForTimeout(2000); // Extra wait for full initialization
       await set4G(context, page);
@@ -242,7 +267,7 @@ for (const target of targets) {
         page,
         target.selectors,
         `Show me Mohamed Salah`,
-        target.fetchRegex
+        target.fetchRegex,
       );
       console.log(`[TEST] Warmup complete, starting measured runs...`);
       await page.waitForTimeout(2000);
@@ -254,14 +279,14 @@ for (const target of targets) {
         await page.reload({ waitUntil: "networkidle" });
         await page.waitForTimeout(1000); // Wait for reload to settle
         await ensureNLQMode(page, target.name);
-        
+
         const metrics = await runPromptWithNetworkTracking(
           page,
           target.selectors,
           `Show me Mohamed Salah`,
-          target.fetchRegex
+          target.fetchRegex,
         );
-        
+
         runs.push(metrics);
         console.log(`[TEST] Run ${i + 1} complete:`, metrics);
         await page.waitForTimeout(1000); // Brief pause between runs
@@ -277,10 +302,16 @@ for (const target of targets) {
       }
 
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-      fs.writeFileSync(path.join(OUTPUT_DIR, `${target.name}-P1.json`), JSON.stringify(stats, null, 2));
+      fs.writeFileSync(
+        path.join(OUTPUT_DIR, `${target.name}-P1.json`),
+        JSON.stringify(stats, null, 2),
+      );
     });
 
-    test(`P2: Complex query (streaming throughput)`, async ({ page, context }) => {
+    test(`P2: Complex query (streaming throughput)`, async ({
+      page,
+      context,
+    }) => {
       // Fresh page load for P2 to avoid any state from P1
       await page.goto(target.baseUrl, { waitUntil: "networkidle" });
       await page.waitForTimeout(2000); // Extra wait for full initialization
@@ -293,7 +324,7 @@ for (const target of targets) {
         page,
         target.selectors,
         `Show me Mohamed Salah's goals and assists in 2025`,
-        target.fetchRegex
+        target.fetchRegex,
       );
       console.log(`[TEST] Warmup complete, starting measured runs...`);
       await page.waitForTimeout(2000);
@@ -305,14 +336,14 @@ for (const target of targets) {
         await page.reload({ waitUntil: "networkidle" });
         await page.waitForTimeout(1000); // Wait for reload to settle
         await ensureNLQMode(page, target.name);
-        
+
         const metrics = await runPromptWithNetworkTracking(
           page,
           target.selectors,
           `Show me Mohamed Salah's goals and assists in 2025`,
-          target.fetchRegex
+          target.fetchRegex,
         );
-        
+
         runs.push(metrics);
         console.log(`[TEST] Run ${i + 1} complete:`, metrics);
         await page.waitForTimeout(1000); // Brief pause between runs
@@ -330,7 +361,10 @@ for (const target of targets) {
       }
 
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-      fs.writeFileSync(path.join(OUTPUT_DIR, `${target.name}-P2.json`), JSON.stringify(stats, null, 2));
+      fs.writeFileSync(
+        path.join(OUTPUT_DIR, `${target.name}-P2.json`),
+        JSON.stringify(stats, null, 2),
+      );
     });
   });
 }

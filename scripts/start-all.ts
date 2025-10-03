@@ -10,27 +10,29 @@ const repos = [
   {
     name: "custom-next-langchain",
     url: process.env.REPO_CUSTOM!,
-    services: [{ port: 3000, start: "npm run dev", name: "ui" }]
+    services: [{ port: 3000, start: "npm run dev", name: "ui" }],
   },
   {
     name: "copilotkit-ui",
     url: process.env.REPO_COPILOT!,
-    services: [{ port: 3001, start: "npm run dev", name: "ui" }]
+    services: [{ port: 3001, start: "npm run dev", name: "ui" }],
   },
   {
     name: "agent-chat-ui-langgraph",
     url: process.env.REPO_AGENT!,
     services: [
       { port: 3002, start: "npm run dev", name: "frontend" },
-      { port: 8000, start: "npm run start:server", name: "backend" }
-    ]
-  }
-].filter(r => r.url);
+      { port: 8000, start: "npm run start:server", name: "backend" },
+    ],
+  },
+].filter((r) => r.url);
 
 async function sh(cmd: string, cwd: string) {
   return new Promise<void>((resolve, reject) => {
     const p = spawn(cmd, { cwd, shell: true, stdio: "inherit" });
-    p.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited ${code}`))));
+    p.on("exit", (code) =>
+      code === 0 ? resolve() : reject(new Error(`${cmd} exited ${code}`)),
+    );
   });
 }
 
@@ -48,20 +50,28 @@ async function main() {
 
     // Start each service for this repository
     for (const service of r.services) {
-      console.log(`Starting ${r.name}/${service.name} on port ${service.port}...`);
+      console.log(
+        `Starting ${r.name}/${service.name} on port ${service.port}...`,
+      );
       sh(service.start, dir); // run in background
-      allServices.push({ repo: r.name, port: service.port, name: service.name });
+      allServices.push({
+        repo: r.name,
+        port: service.port,
+        name: service.name,
+      });
     }
   }
 
   console.log("Waiting for all services to start...");
-  const resources = allServices.map(s => `http://localhost:${s.port}`);
+  const resources = allServices.map((s) => `http://localhost:${s.port}`);
   await waitOn({ resources, timeout: 120000 });
   console.log("All services are up:");
-  allServices.forEach(s => console.log(`  ${s.repo}/${s.name}: http://localhost:${s.port}`));
+  allServices.forEach((s) =>
+    console.log(`  ${s.repo}/${s.name}: http://localhost:${s.port}`),
+  );
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

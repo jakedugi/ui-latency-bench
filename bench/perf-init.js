@@ -1,4 +1,4 @@
-(function() {
+(function () {
   if (typeof window === "undefined") return;
 
   if (!window.__perf) window.__perf = { enabled: true, samples: [] };
@@ -17,9 +17,9 @@
 
   async function fetchWithPerf(input, init, label) {
     try {
-      const url = typeof input === "string" ? input : input?.url ?? "";
+      const url = typeof input === "string" ? input : (input?.url ?? "");
       console.log(`[PERF] Intercepted fetch to: ${url}`);
-      
+
       mark(`${label}:submit`);
       const t0 = performance.now();
       const res = await window.__origFetch(input, init);
@@ -34,7 +34,11 @@
         measure(`${label}:ttl_ms`, `${label}:submit`, `${label}:last-byte`);
         requestAnimationFrame(() => {
           mark(`${label}:render`);
-          measure(`${label}:render_ms`, `${label}:last-byte`, `${label}:render`);
+          measure(
+            `${label}:render_ms`,
+            `${label}:last-byte`,
+            `${label}:render`,
+          );
         });
         return res;
       }
@@ -50,10 +54,18 @@
               if (done) {
                 controller.close();
                 mark(`${label}:last-byte`);
-                measure(`${label}:ttl_ms`, `${label}:submit`, `${label}:last-byte`);
+                measure(
+                  `${label}:ttl_ms`,
+                  `${label}:submit`,
+                  `${label}:last-byte`,
+                );
                 requestAnimationFrame(() => {
                   mark(`${label}:render`);
-                  measure(`${label}:render_ms`, `${label}:last-byte`, `${label}:render`);
+                  measure(
+                    `${label}:render_ms`,
+                    `${label}:last-byte`,
+                    `${label}:render`,
+                  );
                   event(`${label}:bytes_total`, bytes);
                 });
                 return;
@@ -63,20 +75,24 @@
                 if (first) {
                   first = false;
                   mark(`${label}:first-token`);
-                  measure(`${label}:ttft_ms`, `${label}:submit`, `${label}:first-token`);
+                  measure(
+                    `${label}:ttft_ms`,
+                    `${label}:submit`,
+                    `${label}:first-token`,
+                  );
                 }
                 controller.enqueue(value);
               }
               return pump();
             });
           return pump();
-        }
+        },
       });
 
       return new Response(stream, {
         status: res.status,
         statusText: res.statusText,
-        headers: res.headers
+        headers: res.headers,
       });
     } catch (e) {
       event(`${label}:error`, 1, { message: String(e) });
@@ -89,7 +105,7 @@
   window.__installFetchPerf = (regexString) => {
     const re = new RegExp(regexString);
     window.fetch = (input, init) => {
-      const url = typeof input === "string" ? input : input?.url ?? "";
+      const url = typeof input === "string" ? input : (input?.url ?? "");
       if (re.test(url)) return fetchWithPerf(input, init, "chat");
       return window.__origFetch(input, init);
     };

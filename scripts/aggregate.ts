@@ -1,7 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const OUTPUT_DIR = process.env.OUTPUT_DIR ?? path.join(process.cwd(), "artifacts");
+const OUTPUT_DIR =
+  process.env.OUTPUT_DIR ?? path.join(process.cwd(), "artifacts");
 const files = fs.existsSync(OUTPUT_DIR) ? fs.readdirSync(OUTPUT_DIR) : [];
 
 type Metric = {
@@ -18,7 +19,7 @@ for (const f of files) {
   if (!f.endsWith(".json")) continue;
   const data = JSON.parse(fs.readFileSync(path.join(OUTPUT_DIR, f), "utf8"));
   const [name, test] = f.replace(".json", "").split("-P");
-  let row = rows.find(r => r.name === name);
+  let row = rows.find((r) => r.name === name);
   if (!row) {
     row = { name };
     rows.push(row);
@@ -37,6 +38,9 @@ for (const r of rows) {
 }
 
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-fs.writeFileSync(path.join(OUTPUT_DIR, "results.json"), JSON.stringify(rows, null, 2));
+fs.writeFileSync(
+  path.join(OUTPUT_DIR, "results.json"),
+  JSON.stringify(rows, null, 2),
+);
 fs.writeFileSync(path.join(OUTPUT_DIR, "results.md"), md);
 console.log(md);
